@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "*.lex": "lex",
+        "*.inl": "plaintext",
+        "typeinfo": "c"
+    }
+}

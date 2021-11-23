@@ -22,7 +22,7 @@ void print_records_by_name(void);
 void print_avg_income_and_expenses(void);
 void print_expenses_above_avg(void);
 void print_records_in_id_asc(void);
-void dump_records_info_file(void);
+void dump_records_into_file(void);
 void read_records_from_file(void);
 
 void (*functions[])(void) = {
@@ -33,7 +33,7 @@ void (*functions[])(void) = {
     print_avg_income_and_expenses,
     print_expenses_above_avg,
     print_records_in_id_asc,
-    dump_records_info_file,
+    dump_records_into_file,
     read_records_from_file
 };
 
@@ -85,6 +85,10 @@ void* binary_search_first_appear(void const *key, void const *ptr, size_t count,
     byte const *left = ptr;
     byte const *right = left + count*size;
 
+    // 如果是空列表直接返回
+    if (left == right) 
+        return 0;
+
     // keep element in [left, right) < key
     while (left != right) {
         byte const * const mid = left + (right - left) / size / 2 * size;
@@ -104,7 +108,8 @@ void* binary_search_first_appear(void const *key, void const *ptr, size_t count,
 
 // ============ 小工具 ====================
 /**
- * @brief 打印输出 Record 之前的表头 */
+ * @brief 打印输出 Record 之前的表头 
+ * @param fp 输出文件 */
 void print_records_header(FILE *fp) {
     fprintf(fp, "%10s%12s%10s%10s\n", "ID", "Name", "Income", "expenses");
     fprintf(fp, "  --------" "  ----------" "  --------" "  --------" "\n");
@@ -112,9 +117,20 @@ void print_records_header(FILE *fp) {
 
 /**
  * @brief 打印 Record p
+ * @param fp 输出文件
  * @param p 待打印的 Record */
 void print_record(FILE *fp, Record const *p) {
     fprintf(fp, "%10s%12s%10d%10d\n", p->id, p->name, p->income, p->expenses);
+}
+
+/**
+ * @brief 打印全部的 Record
+ * @param fp 输出文件 */
+void print_records_all(FILE *fp) {
+    print_records_header(fp);
+    for (size_t i = 0; i < record_cnt; i++) {
+        print_record(fp, record_list + i);
+    }
 }
 
 /**
@@ -146,12 +162,14 @@ FILE *open_file_from_input(char *mode) {
 
     do {
         printf("Please input file name: ");
-    } while (scanf("%[^\n]", filename) != 1);
+    } while (scanf(" %[^\n]", filename) != 1);
 
     if ((file = fopen(filename, mode)) == 0) {
         printf("Fail to open file.\n");
         return 0;
     }
+
+    return file;
 }
 
 // ============== 由下为各个功能 ========================
@@ -164,23 +182,19 @@ void input_record(void) {
     for (Record *now = record_list; now < record_list + record_cnt; now++) {
         do {
             if (scanf("%5s", now->id) != 1 || !str_all(now->id, isdigit))
-                continue;
+                goto error;
 
             if (scanf("%10s", now->name) != 1 || !str_all(now->name, isalnum))
-                continue;   
+                goto error; 
 
             if (scanf("%d %d", &(now->income), &(now->expenses)) != 2)
-                continue;
+                goto error;
 
             break;
+        error: 
+            printf("\nWrong input.\n");
+            scanf("%*[^\n]");
         } while (1);
-    }
-}
-
-void print_records_all(FILE *fp) {
-    print_records_header(fp);
-    for (size_t i = 0; i < record_cnt; i++) {
-        print_record(fp, record_list + i);
     }
 }
 
@@ -241,6 +255,7 @@ void print_expenses_above_avg(void) {
 
     double const avg_expenses = 1.0 * expenses_sum / record_cnt;
 
+    print_records_header(stdout);
     for (size_t i = 0; i < record_cnt; i++) {
         if (record_list[i].expenses > avg_expenses) 
             print_record(stdout, record_list + i);
@@ -259,7 +274,8 @@ void dump_records_into_file(void) {
         return;
 
     fprintf(dump_file, "%zu\n", record_cnt);
-    print_records_all(dump_file);
+    for (Record *p = record_list; p < record_list + record_cnt; p++)
+        print_record(dump_file, p);
 
     fclose(dump_file);
 }
@@ -267,15 +283,19 @@ void dump_records_into_file(void) {
 void read_records_from_file(void) {
     FILE *data_file;
 
-    if ((data_file = open_file_from_input("r")) == 0)
+    if ((data_file = open_file_from_input("r")) == 0) {
+        puts("Cannot find this file!");
         return;
+    }
 
     fscanf(data_file, "%zu", &record_cnt);
     record_list = realloc(record_list, record_cnt);
 
     for (size_t i = 0; i < record_cnt; i++) {
-        fscanf(data_file, "%s%s%d%d", &(record_list[i].id), &(record_list[i].name), &(record_list[i].income), &(record_list[i].expenses));
+        fscanf(data_file, "%s%s%d%d", record_list[i].id, record_list[i].name, &(record_list[i].income), &(record_list[i].expenses));
     }
+
+    print_records_all(stdout);
 
     fclose(data_file);
 }
@@ -283,3 +303,14 @@ void read_records_from_file(void) {
 void exit_program(void) {
     exit(0);
 }
+
+/*
+
+10001	zero	    6000	1500
+10023	Aef	        10000	3000
+20011	eric001	    20000	10000
+20012	ffff	    15000	0
+30004	abc	        8000	14000
+99999	1234567890	2147483647	-2147483648
+-1000	A	        2147483648	-2147483649
+*/

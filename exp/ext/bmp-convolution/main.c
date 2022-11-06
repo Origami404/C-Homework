@@ -16,7 +16,7 @@ PixelBlock *get_pixel(BMPImage *img, int x, int y) {
 
 int const dx_[] = {-1, -1, -1, 0, 0, 0, 1, 1, 1};
 int const dy_[] = {-1, 0, 1, -1, 0, 1, -1, 0, 1};
-#define dlen sizeof(dx_) / sizeof(*dx_)
+size_t const dlen = sizeof(dx_) / sizeof(*dx_);
 
 BMPImage *Convolution2D(BMPImage *raw, float const kernel[static 3][3]) {
     BMPImage *res = malloc(sizeof(*res));
@@ -84,7 +84,7 @@ float const identify[3][3] = {
 #define save_bmp(img, kernel_name)                                             \
     do {                                                                       \
         BMPImage *res = Convolution2D(img, kernel_name);                       \
-        if (SaveBMPImage("out/xm_" #kernel_name ".bmp", res)) {                    \
+        if (SaveBMPImage("out/xm_" #kernel_name ".bmp", res)) {                \
             printf("BMP image " #kernel_name " processed.\n");                 \
             bmp_free(res);                                                     \
         }                                                                      \

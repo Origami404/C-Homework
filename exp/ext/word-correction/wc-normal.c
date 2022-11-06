@@ -29,7 +29,7 @@ size_t dict_cnt = 0;
  * @return char* 复制出来的字符串副本, 在堆上
  */
 char *strdup(char const *s) {
-    char *p = malloc(strlen(s) + 1);
+    char * const p = malloc(strlen(s) + 1);
     strcpy(p, s);
     return p;
 }
@@ -41,7 +41,7 @@ char *strdup(char const *s) {
  * @param b 待比较字符串指针指针
  * @return int 他们指向的字符串的相对大小
  */
-int strp_cmp(void const *a, void const *b) { return strcmp(*(char **)a, *(char **)b); }
+int strp_cmp(void const * restrict a, void const * restrict b) { return strcmp(*(char **)a, *(char **)b); }
 
 /**
  * @brief 从词典文件中解析出词典并排序
@@ -58,7 +58,7 @@ void dict_build(FILE *voc_file) {
     }
 
     // 排序, 通过排序字符串指针指针来减小拷贝性能损耗
-    qsort(dict, dict_cnt, sizeof(char *), strp_cmp);
+    qsort(dict, dict_cnt, sizeof(*dict), strp_cmp);
 }
 
 /**
@@ -159,7 +159,7 @@ char const *correct(char const *word) {
     // 并返回编辑距离最小的单词
 
     int min_dis = INT_MAX;
-    char *min_word = 0;
+    char const *min_word = 0;
 
     for (size_t i = 0; i < dict_cnt; i++) {
         int const now_dis = calc_distance(dict[i], word);
@@ -175,12 +175,12 @@ char const *correct(char const *word) {
 
 int main() {
     // 读取并构建单词表
-    FILE *voc_file = fopen("vocabulary.txt", "r");
+    FILE * const voc_file = fopen("vocabulary.txt", "r");
     dict_build(voc_file);
 
     // 打开输入输出文件
-    FILE *input_file = fopen("words.txt", "r");
-    FILE *output_file = fopen("word_correction.txt", "w");
+    FILE * const input_file = fopen("words.txt", "r");
+    FILE * const output_file = fopen("word_correction.txt", "w");
 
     char buf[128];
     fgets(buf, 4, input_file); // eat the BOM
@@ -192,7 +192,7 @@ int main() {
         fprintf(output_file, "%s ", buf);
 
         // 开始切词, 第一个词以空格跟其他的词分隔
-        char *word = cut_word(buf + 5);
+        char const *word = cut_word(buf + 5);
         fprintf(output_file, "%s ", correct(word));
 
         // 继续切词直到结束, 后面的词中间以斜杠分隔, 并且末尾不能出现斜杠

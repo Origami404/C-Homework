@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -21,7 +22,7 @@ typedef struct {
     digit_t *digit;
 } BigNum;
 
-#define DIGIT_LEN sizeof(digit_t)
+size_t const DIGIT_LEN = sizeof(digit_t);
 
 static inline BigNum* bn_alloc(void) {
     BigNum *p = checked_malloc(sizeof(BigNum));
